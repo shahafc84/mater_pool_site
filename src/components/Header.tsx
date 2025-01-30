@@ -1,53 +1,73 @@
-import Link from 'next/link'
-import { DynamicLogo } from './Logo'
-import he from '@/he.json'
+"use client";
+
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { DynamicLogo } from "@/components/Logo";
 
 export default function Header() {
-	return (
-		<header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-			<div className="container mx-auto px-4 py-4 flex items-center justify-between">
-				<div className="flex items-center">
-					<DynamicLogo />
-				</div>
-				<nav className="hidden md:flex space-x-6 space-x-reverse">
-					<Link
-						href="#services"
-						className="text-foreground hover:text-primary transition-colors"
-					>
-						{he['header.nav.services']}
-					</Link>
-					<Link
-						href="#gallery"
-						className="text-foreground hover:text-primary transition-colors"
-					>
-						{he['header.nav.gallery']}
-					</Link>
-					<Link
-						href="#testimonials"
-						className="text-foreground hover:text-primary transition-colors"
-					>
-						{he['header.nav.testimonials']}
-					</Link>
-					<Link
-						href="#about-us"
-						className="text-foreground hover:text-primary transition-colors"
-					>
-						{he['header.nav.about']}
-					</Link>
-					<Link
-						href="#faq"
-						className="text-foreground hover:text-primary transition-colors"
-					>
-						{he['header.nav.faq']}
-					</Link>
-					<Link
-						href="#contact"
-						className="text-primary font-semibold hover:text-primary/80 transition-colors"
-					>
-						{he['header.nav.contact']}
-					</Link>
-				</nav>
-			</div>
-		</header>
-	)
+  const [pages, setPages] = useState([]); // עמודים מה-API
+  const [isClient, setIsClient] = useState(false); // וידוא טעינה בצד לקוח
+  const [isLoading, setIsLoading] = useState(true); // מצב טעינה
+
+  useEffect(() => {
+    setIsClient(true);
+
+    async function fetchPages() {
+      try {
+        const res = await fetch("https://admin.master-pool.co.il/api/pages-p");
+        if (!res.ok) {
+          throw new Error(`Failed to fetch: ${res.statusText}`);
+        }
+        const data = await res.json();
+        setPages(data.data.filter((page: any) => page.Show_in_Menu === true));
+      } catch (err) {
+        console.error("🚨 Error fetching pages:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    fetchPages();
+  }, []);
+
+  if (!isClient) {
+    return null;
+  }
+
+  return (
+    <header className="bg-background/80 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
+      <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        {/* לוגו עם קישור לדף הבית */}
+        <Link href="/">
+          <DynamicLogo />
+        </Link>
+
+        <nav className="hidden md:flex space-x-6 space-x-reverse">
+          <Link href="/" className="text-foreground hover:text-primary transition-colors">
+            דף הבית
+          </Link>
+
+          {isLoading ? (
+            <p className="text-gray-500">טוען תפריט...</p>
+          ) : pages.length > 0 ? (
+            pages.map((page: any) => (
+              <Link
+                key={page.id}
+                href={`/${page.Slug}`}
+                className="text-foreground hover:text-primary transition-colors"
+              >
+                {page.Title}
+              </Link>
+            ))
+          ) : (
+            <p className="text-gray-500">⚠️ לא נמצאו עמודים</p>
+          )}
+
+          <Link href="/Contact" className="text-foreground hover:text-primary transition-colors">
+            צור קשר
+          </Link>
+        </nav>
+      </div>
+    </header>
+  );
 }
